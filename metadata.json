@@ -1,0 +1,6 @@
+{
+  "name": "RCB FOODS - Karachi Ultimate Food Stop",
+  "description": "Official online ordering website for RCB FOODS Islamabad. Explore Karachi-style famous deals, burgers, paratha rolls, biryani, barbecue, and fresh juice bar with instant WhatsApp order slips and real-time order tracking.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
