@@ -10,9 +10,7 @@ import {
   Sparkles, 
   SlidersHorizontal,
   X,
-  Layers,
-  Leaf,
-  ShieldCheck
+  Heart
 } from 'lucide-react';
 
 interface MenuSectionProps {
@@ -32,7 +30,13 @@ export const MenuSection = ({
   const [selectedDietary, setSelectedDietary] = useState<DietaryTag>('All');
   const [addedItemMap, setAddedItemMap] = useState<Record<string, boolean>>({});
   const [selectedFlavorMap, setSelectedFlavorMap] = useState<Record<string, string>>({});
+  const [favoritesMap, setFavoritesMap] = useState<Record<string, boolean>>({});
   const [sortBy, setSortBy] = useState<'default' | 'price_low' | 'price_high' | 'popular'>('default');
+
+  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoritesMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Compute dietary counts for badges
   const dietaryCounts = useMemo(() => {
@@ -252,11 +256,12 @@ export const MenuSection = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
             <AnimatePresence>
               {filteredItems.map((item) => {
                 const isAdded = !!addedItemMap[item.id];
                 const currentFlavor = selectedFlavorMap[item.id] || (item.flavors ? item.flavors[0] : '');
+                const isFavorite = !!favoritesMap[item.id];
 
                 return (
                   <motion.div
@@ -265,106 +270,91 @@ export const MenuSection = ({
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    whileHover={{ y: -6 }}
                     transition={{ duration: 0.25 }}
-                    className="bg-white rounded-2xl border border-stone-200/90 shadow-xs hover:shadow-xl hover:border-red-200 transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+                    className="bg-white rounded-2xl border border-stone-200/90 shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between group p-2.5 sm:p-3.5"
                   >
                     <div>
-                      {/* Image Thumbnail */}
-                      <div className="relative h-44 w-full bg-stone-100 overflow-hidden">
+                      {/* Image Thumbnail with Heart and Red Circular Plus Button */}
+                      <div className="relative rounded-xl overflow-hidden bg-stone-100 aspect-square sm:aspect-4/3">
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
 
-                        {/* Popular Badge */}
-                        {item.popular && (
-                          <div className="absolute top-2.5 left-2.5 bg-amber-400 text-stone-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" />
+                        {/* Wishlist / Favorite Heart Icon */}
+                        <button
+                          type="button"
+                          onClick={(e) => toggleFavorite(item.id, e)}
+                          aria-label="Add to wishlist"
+                          className="absolute top-2 right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 backdrop-blur-xs shadow-xs flex items-center justify-center text-stone-600 hover:text-red-500 active:scale-90 transition cursor-pointer"
+                        >
+                          <Heart
+                            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
+                              isFavorite ? 'fill-red-500 text-red-500' : 'text-stone-600'
+                            }`}
+                          />
+                        </button>
+
+                        {/* Popular or Spice Badge */}
+                        {item.popular ? (
+                          <div className="absolute top-2 left-2 z-10 bg-amber-400 text-stone-950 text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-xs flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5" />
                             <span>Bestseller</span>
                           </div>
-                        )}
-
-                        {/* Spice Level */}
-                        {item.spiceLevel && (
-                          <div className={`absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm ${
-                            item.spiceLevel === 'Karachi Spicy'
-                              ? 'bg-red-600 text-white'
-                              : item.spiceLevel === 'Hot'
-                              ? 'bg-orange-500 text-white'
-                              : 'bg-stone-900/80 text-stone-200 backdrop-blur-xs'
-                          }`}>
+                        ) : item.spiceLevel ? (
+                          <div
+                            className={`absolute top-2 left-2 z-10 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs ${
+                              item.spiceLevel === 'Karachi Spicy'
+                                ? 'bg-red-600 text-white'
+                                : item.spiceLevel === 'Hot'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-stone-900/80 text-stone-200 backdrop-blur-xs'
+                            }`}
+                          >
                             {item.spiceLevel}
                           </div>
-                        )}
+                        ) : null}
 
-                        {/* Price Badge */}
-                        <div className="absolute bottom-2.5 right-2.5 bg-stone-950/90 backdrop-blur-xs text-white text-sm font-black px-2.5 py-1 rounded-lg">
-                          Rs. {item.price}/-
-                        </div>
-
-                        {/* Urdu Name */}
-                        {item.urduName && (
-                          <div className="absolute bottom-2.5 left-2.5 text-amber-200 text-xs font-bold drop-shadow">
-                            {item.urduName}
-                          </div>
-                        )}
+                        {/* Quick Add Red Circular Plus Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleAdd(item)}
+                          aria-label={`Add ${item.name} to cart`}
+                          className={`absolute bottom-2 right-2 z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-md transition-all duration-200 cursor-pointer active:scale-90 ${
+                            isAdded
+                              ? 'bg-emerald-600 text-white scale-105'
+                              : 'bg-red-600 hover:bg-red-700 text-white'
+                          }`}
+                        >
+                          {isAdded ? (
+                            <Check className="w-4 h-4" />
+                          ) : (
+                            <Plus className="w-4 h-4 stroke-[2.5]" />
+                          )}
+                        </button>
                       </div>
 
-                      {/* Details */}
-                      <div className="p-4">
-                        <h3 className="font-bold text-stone-900 text-base leading-snug line-clamp-1 mb-1 group-hover:text-red-600 transition-colors">
+                      {/* Details Below Image */}
+                      <div className="pt-2 sm:pt-2.5">
+                        <h3 className="font-bold text-stone-900 text-xs sm:text-base leading-snug line-clamp-1 group-hover:text-red-600 transition-colors">
                           {item.name}
                         </h3>
-                        <p className="text-stone-500 text-xs line-clamp-2 mb-2">
+
+                        {item.urduName && (
+                          <p className="text-[10px] sm:text-xs text-amber-700 font-bold leading-tight mt-0.5 line-clamp-1">
+                            {item.urduName}
+                          </p>
+                        )}
+
+                        <p className="text-[11px] sm:text-xs text-stone-500 line-clamp-2 mt-1 leading-snug min-h-[1.75rem]">
                           {item.description}
                         </p>
 
-                        {/* Dietary Tags Chips */}
-                        {item.dietaryTags && item.dietaryTags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-3">
-                            {item.dietaryTags.map((tag) => {
-                              if (tag === 'All') return null;
-                              let badgeColor = 'bg-stone-100 text-stone-700';
-                              let icon = '';
-                              if (tag === 'Spicy') {
-                                badgeColor = 'bg-red-50 text-red-700 border border-red-200/80';
-                                icon = '🌶️';
-                              } else if (tag === 'Veg') {
-                                badgeColor = 'bg-emerald-50 text-emerald-700 border border-emerald-200/80';
-                                icon = '🌱';
-                              } else if (tag === 'Halal') {
-                                badgeColor = 'bg-green-50 text-green-800 border border-green-200/80';
-                                icon = '🥩';
-                              } else if (tag === 'Crispy') {
-                                badgeColor = 'bg-amber-50 text-amber-800 border border-amber-200/80';
-                                icon = '🍗';
-                              } else if (tag === 'Chef Special') {
-                                badgeColor = 'bg-purple-50 text-purple-700 border border-purple-200/80';
-                                icon = '⭐';
-                              }
-                              return (
-                                <span
-                                  key={tag}
-                                  className={`text-[9.5px] font-extrabold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 ${badgeColor}`}
-                                >
-                                  <span>{icon}</span>
-                                  <span>{tag}</span>
-                                </span>
-                              );
-                            })}
-                          </div>
-                        )}
-
                         {/* Optional Flavor Selector */}
                         {item.flavors && item.flavors.length > 0 && (
-                          <div className="mb-3 bg-stone-50 p-2 rounded-xl border border-stone-100">
-                            <label className="block text-[10px] font-bold text-stone-600 uppercase mb-1">
-                              Choose Flavor / Sauce:
-                            </label>
+                          <div className="mt-1.5 pt-1 border-t border-stone-100">
                             <select
                               value={currentFlavor}
                               onChange={(e) =>
@@ -373,7 +363,7 @@ export const MenuSection = ({
                                   [item.id]: e.target.value,
                                 }))
                               }
-                              className="w-full text-xs font-semibold py-1 px-2 bg-white border border-stone-200 rounded-lg text-stone-800 focus:ring-1 focus:ring-red-500"
+                              className="w-full text-[10px] sm:text-xs font-semibold py-1 px-1.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 focus:ring-1 focus:ring-red-500 truncate cursor-pointer"
                             >
                               {item.flavors.map((f) => (
                                 <option key={f} value={f}>
@@ -386,30 +376,19 @@ export const MenuSection = ({
                       </div>
                     </div>
 
-                    {/* Add to Cart Button */}
-                    <div className="p-4 pt-0">
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleAdd(item)}
-                        className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs ${
-                          isAdded
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-stone-900 hover:bg-red-600 text-white'
-                        }`}
-                      >
-                        {isAdded ? (
-                          <>
-                            <Check className="w-4 h-4" />
-                            <span>Added to Cart!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-4 h-4" />
-                            <span>Add to Order</span>
-                          </>
-                        )}
-                      </motion.button>
+                    {/* Price Row */}
+                    <div className="mt-2 pt-1.5 border-t border-stone-100 flex items-baseline justify-between">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xs sm:text-sm text-stone-600 font-bold">Rs</span>
+                        <span className="text-sm sm:text-lg font-black text-stone-900 leading-none">
+                          {item.price}
+                        </span>
+                      </div>
+                      {item.dietaryTags && item.dietaryTags.some((t) => t !== 'All') && (
+                        <span className="text-[9.5px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-sm">
+                          {item.dietaryTags.find((t) => t !== 'All')}
+                        </span>
+                      )}
                     </div>
                   </motion.div>
                 );

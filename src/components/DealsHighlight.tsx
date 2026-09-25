@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { MenuItem } from '../types';
-import { Flame, Sparkles, Plus, Check, Users, Wine } from 'lucide-react';
+import { Flame, Sparkles, Plus, Check, Users, Wine, Heart } from 'lucide-react';
 
 interface DealsHighlightProps {
   deals: MenuItem[];
@@ -12,6 +12,12 @@ export const DealsHighlight = ({ deals, onAddToCart }: DealsHighlightProps) => {
   const [addedItemId, setAddedItemId] = useState<string | null>(null);
   const [activeFlavorModalItem, setActiveFlavorModalItem] = useState<MenuItem | null>(null);
   const [selectedFlavor, setSelectedFlavor] = useState<string>('Karachi Chutney');
+  const [favoritesMap, setFavoritesMap] = useState<Record<string, boolean>>({});
+
+  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoritesMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const handleQuickAdd = (deal: MenuItem) => {
     if (deal.flavors && deal.flavors.length > 0) {
@@ -60,10 +66,11 @@ export const DealsHighlight = ({ deals, onAddToCart }: DealsHighlightProps) => {
           </div>
         </div>
 
-        {/* Deals Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Deals Grid (2-column layout on mobile, clean card arrangement) */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
           {deals.map((deal, index) => {
             const isJustAdded = addedItemId === deal.id;
+            const isFavorite = !!favoritesMap[deal.id];
 
             return (
               <motion.div
@@ -71,104 +78,96 @@ export const DealsHighlight = ({ deals, onAddToCart }: DealsHighlightProps) => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.4, delay: (index % 4) * 0.08 }}
-                whileHover={{ y: -5 }}
-                className="bg-white rounded-2xl border border-stone-200/90 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+                transition={{ duration: 0.35, delay: (index % 4) * 0.05 }}
+                className="bg-white rounded-2xl border border-stone-200/90 shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between group p-2.5 sm:p-3.5"
               >
                 <div>
                   {/* Deal Image Container */}
-                  <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-stone-100">
+                  <div className="relative rounded-xl overflow-hidden bg-stone-100 aspect-square sm:aspect-4/3">
                     <img
                       src={deal.image}
                       alt={deal.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-60" />
 
-                    {/* Free Drink Pill */}
-                    {deal.freeDrink && (
-                      <div className="absolute top-3 left-3 bg-red-600 text-white text-[11px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1">
-                        <Wine className="w-3 h-3" />
+                    {/* Wishlist / Favorite Heart Icon */}
+                    <button
+                      type="button"
+                      onClick={(e) => toggleFavorite(deal.id, e)}
+                      aria-label="Add to wishlist"
+                      className="absolute top-2 right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 backdrop-blur-xs shadow-xs flex items-center justify-center text-stone-600 hover:text-red-500 active:scale-90 transition cursor-pointer"
+                    >
+                      <Heart
+                        className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
+                          isFavorite ? 'fill-red-500 text-red-500' : 'text-stone-600'
+                        }`}
+                      />
+                    </button>
+
+                    {/* Free Drink / Serving Badge */}
+                    {deal.freeDrink ? (
+                      <div className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-xs flex items-center gap-1">
+                        <Wine className="w-2.5 h-2.5" />
                         <span>FREE DRINK</span>
                       </div>
-                    )}
-
-                    {/* Serving Info */}
-                    {deal.serving && (
-                      <div className="absolute top-3 right-3 bg-stone-900/80 backdrop-blur-xs text-stone-200 text-[10px] font-semibold px-2 py-1 rounded-md flex items-center gap-1">
-                        <Users className="w-3 h-3 text-amber-400" />
+                    ) : deal.serving ? (
+                      <div className="absolute top-2 left-2 z-10 bg-stone-900/80 backdrop-blur-xs text-stone-200 text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <Users className="w-2.5 h-2.5 text-amber-400" />
                         <span>{deal.serving}</span>
                       </div>
-                    )}
+                    ) : null}
 
-                    {/* Price Ribbon */}
-                    <div className="absolute bottom-3 right-3 bg-amber-400 text-stone-950 font-heading text-xl font-black px-3 py-1 rounded-xl shadow-lg leading-tight">
-                      Rs. {deal.price}/-
-                    </div>
-
-                    {/* Urdu Name */}
-                    {deal.urduName && (
-                      <div className="absolute bottom-3 left-3 text-amber-200 text-xs font-bold drop-shadow">
-                        {deal.urduName}
-                      </div>
-                    )}
+                    {/* Quick Add Red Circular Plus Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAdd(deal)}
+                      aria-label={`Add ${deal.name} to cart`}
+                      className={`absolute bottom-2 right-2 z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-md transition-all duration-200 cursor-pointer active:scale-90 ${
+                        isJustAdded
+                          ? 'bg-emerald-600 text-white scale-105'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                      }`}
+                    >
+                      {isJustAdded ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                      )}
+                    </button>
                   </div>
 
-                  {/* Card Content */}
-                  <div className="p-4 sm:p-5">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="font-heading text-xl sm:text-2xl font-black text-stone-900 tracking-wide">
-                        {deal.name}
-                      </h3>
-                      {deal.originalPrice && (
-                        <span className="text-xs text-stone-400 line-through font-semibold pt-1 whitespace-nowrap">
-                          Rs. {deal.originalPrice}
-                        </span>
-                      )}
-                    </div>
+                  {/* Card Content Below Image */}
+                  <div className="pt-2 sm:pt-2.5">
+                    <h3 className="font-bold text-stone-900 text-xs sm:text-base leading-snug line-clamp-1 group-hover:text-red-600 transition-colors">
+                      {deal.name}
+                    </h3>
 
-                    <p className="text-stone-600 text-xs sm:text-sm line-clamp-2 mb-3">
+                    {deal.urduName && (
+                      <p className="text-[10px] sm:text-xs text-amber-700 font-bold leading-tight mt-0.5 line-clamp-1">
+                        {deal.urduName}
+                      </p>
+                    )}
+
+                    <p className="text-[11px] sm:text-xs text-stone-500 line-clamp-2 mt-1 leading-snug min-h-[1.75rem]">
                       {deal.description}
                     </p>
-
-                    {/* Bullet Highlights of the Deal */}
-                    {deal.dealHighlights && (
-                      <div className="space-y-1 py-2 border-t border-stone-100 mb-2">
-                        {deal.dealHighlights.map((item, i) => (
-                          <div key={i} className="flex items-center gap-1.5 text-xs text-stone-700">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-600 shrink-0" />
-                            <span className="truncate">{item}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* Footer Action */}
-                <div className="p-4 sm:p-5 pt-0">
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleQuickAdd(deal)}
-                    className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-sm ${
-                      isJustAdded
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-stone-900 hover:bg-red-600 text-white'
-                    }`}
-                  >
-                    {isJustAdded ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>Added to Cart!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4" />
-                        <span>{deal.flavors ? 'Select Flavor & Add' : 'Add Deal to Cart'}</span>
-                      </>
-                    )}
-                  </motion.button>
+                {/* Price Row */}
+                <div className="mt-2 pt-1.5 border-t border-stone-100 flex items-baseline justify-between">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xs sm:text-sm text-stone-600 font-bold">Rs</span>
+                    <span className="text-sm sm:text-lg font-black text-stone-900 leading-none">
+                      {deal.price}
+                    </span>
+                  </div>
+                  {deal.originalPrice && (
+                    <span className="text-[10px] sm:text-xs text-stone-400 line-through font-semibold">
+                      Rs {deal.originalPrice}
+                    </span>
+                  )}
                 </div>
               </motion.div>
             );
